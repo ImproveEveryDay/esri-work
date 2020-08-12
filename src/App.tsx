@@ -4,7 +4,22 @@ import { loadModules } from 'esri-loader';
 // import MapView from "esri/views/MapView";
 // import FeatureLayer from 'esri/layers/FeatureLayer';
 import './App.css';
-
+const VisualVariables = [
+  {
+    type: "size",
+    legendOptions: {
+      showLegend: true,
+      title: 'population for city',
+    },
+    field: "pop2000",
+    stops: [
+      { value: 10000, size: 4, label: "<10000" },
+      { value: 20000, size: 8, label: "<20000" },
+      { value: 30000, size: 12, label: "<30000" },
+      { value: 40000, size: 14, label: '>40000' },
+    ],
+  }
+]
 const WebMapView = () => {
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -12,7 +27,7 @@ const WebMapView = () => {
     () => {
       // lazy load the required ArcGIS API for JavaScript modules and CSS
       loadModules(['esri/Map', 'esri/views/MapView', 'esri/layers/FeatureLayer',
-        'esri/Graphic', 'esri/layers/GraphicsLayer'], { css: false })
+        'esri/Graphic', 'esri/layers/GraphicsLayer'], { css: true })
         .then(([ArcGISMap, MapView, FeatureLayer, Graphic, GraphicsLayer]) => {
           //satellite, streets-relief-vector, light-gray-vector, dark-gray-vector, streets-navigation-vector
           const map = new ArcGISMap({
@@ -30,7 +45,6 @@ const WebMapView = () => {
             //server side databsource
             // url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0",
             url: "http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0",
-            //*** ADD ***//
             definitionExpression: "class = 'city'",
 
             renderer: {
@@ -42,33 +56,9 @@ const WebMapView = () => {
                   color: [255, 255, 255], // white
                   width: 1
                 },
-                // size: "(10 + $feature.pop2000 / 10000)px",
-                // size: "$feature.pop2000" + "px",
-                // size: '0px',
-                // size: `${10 + $feature.pop2000 / 10000}px`,
               },
-              visualVariables: [
-                {
-                  type: "size",
-                  legendOptions: {
-                    title: 'population by city',
-                  },
-                  field: "pop2000",
-                  stops: [
-                    { value: 10000, size: 4, label: "<15%" },
-                    { value: 20000, size: 12, label: "25%" },
-                    { value: 30000, size: 24, label: ">35%" }
-                  ]
-                  // minDataValue: 0,
-                  // maxDataValue: 2300,
-                  // minSize: "8px",
-                  // maxSize: "18px"
-                }
-              ]
+              visualVariables: VisualVariables,
             },
-
-            //*** ADD ***//
-            // outFields: ['areaname', 'pop2000', 'class'],
           });
           map.add(cityLayer);
 
@@ -88,20 +78,21 @@ const WebMapView = () => {
           function addGraphics(result: any) {
             graphicsLayer.removeAll();
             result.features
-              .filter((feature: any) => feature.attributes.class === 'city')
+              // .filter((feature: any) => feature.attributes.class === 'city')
               .forEach((feature: any) => {
-                const population = feature.attributes['pop2000'];
+                // const population = feature.attributes['pop2000'];
                 var g = new Graphic({
                   geometry: feature.geometry,
                   attributes: feature.attributes,
                   symbol: {
                     type: "simple-marker",
-                    color: [255, 255, 0],
+                    color: [255, 255, 0],  //yellow
                     outline: {
                       width: 1,
-                      color: [0, 255, 255]
+                      color: [0, 255, 255],
                     },
-                    size: `${10 + population / 10000}px`,
+                    visualVariables: VisualVariables,
+                    // size: `${10 + population / 10000}px`,
                   },
                 });
                 graphicsLayer.add(g);
@@ -112,14 +103,14 @@ const WebMapView = () => {
               geometry: point,
               units: 'kilometers',
               distance: distance,
-              spatialRelationship: spatialRelationship,
+              // spatialRelationship: spatialRelationship,
               outFields: ['areaname', 'pop2000', 'class'],
               returnGeometry: true,
-              // outStatistics: true,
+              // outStatistics: [],
               // where: 'class = city',
             };
             cityLayer.queryFeatures(query).then(function (result: any) {
-              // console.log(result.features);
+              console.log(result.features);
               addGraphics(result);
             });
           }
@@ -155,17 +146,17 @@ const WebMapView = () => {
           // view.popup.autoOpenEnabled = false;  // Disable the default popup behavior
           view.on('click', (event: any) => {
             queryFeatureLayer(event.mapPoint, 50, "intersects");
-            view.hitTest(event)
-              .then((hitTestResults: any) => {
-                console.log(hitTestResults.results);
-                if (hitTestResults.results) {
-                  // view.popup.open({ // open a popup to show some of the results
-                  //   location: event.mapPoint,
-                  //   title: "Hit Test Results",
-                  //   content: hitTestResults.results.length + "Features Found"
-                  // });
-                }
-              })
+            // view.hitTest(event)
+            //   .then((hitTestResults: any) => {
+            //     console.log(hitTestResults.results);
+            //     if (hitTestResults.results) {
+            //       // view.popup.open({ // open a popup to show some of the results
+            //       //   location: event.mapPoint,
+            //       //   title: "Hit Test Results",
+            //       //   content: hitTestResults.results.length + "Features Found"
+            //       // });
+            //     }
+            //   })
           })
 
           return () => {
