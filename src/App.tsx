@@ -34,19 +34,10 @@ const WebMapView = () => {
             basemap: 'streets-navigation-vector'
           });
 
-          var graphicsLayer = new GraphicsLayer();
-          map.add(graphicsLayer);
-          // let stateLayer = new FeatureLayer({
-          //   url: "http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/2",
-          // });
-          // map.add(stateLayer);
-
           let cityLayer = new FeatureLayer({
             //server side databsource
-            // url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0",
             url: "http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/0",
             definitionExpression: "class = 'city'",
-
             renderer: {
               type: "simple",
               symbol: {
@@ -75,10 +66,11 @@ const WebMapView = () => {
             },
           });
           map.add(roadLayer);
+          var graphicsLayer = new GraphicsLayer();
+          map.add(graphicsLayer);
           function addGraphics(result: any) {
             graphicsLayer.removeAll();
             result.features
-              // .filter((feature: any) => feature.attributes.class === 'city')
               .forEach((feature: any) => {
                 // const population = feature.attributes['pop2000'];
                 var g = new Graphic({
@@ -91,9 +83,9 @@ const WebMapView = () => {
                       width: 1,
                       color: [0, 255, 255],
                     },
-                    visualVariables: VisualVariables,
                     // size: `${10 + population / 10000}px`,
                   },
+                  visualVariables: VisualVariables,
                 });
                 graphicsLayer.add(g);
               });
@@ -101,13 +93,14 @@ const WebMapView = () => {
           function queryFeatureLayer(point: any, distance: any, spatialRelationship: any) {
             let query = {
               geometry: point,
+              geometryType: 'esriGeometryEnvelope',
               units: 'kilometers',
               distance: distance,
-              // spatialRelationship: spatialRelationship,
+              spatialRelationship: spatialRelationship,
               outFields: ['areaname', 'pop2000', 'class'],
               returnGeometry: true,
               // outStatistics: [],
-              // where: 'class = city',
+              where: "class='city'",
             };
             cityLayer.queryFeatures(query).then(function (result: any) {
               console.log(result.features);
@@ -145,7 +138,7 @@ const WebMapView = () => {
 
           // view.popup.autoOpenEnabled = false;  // Disable the default popup behavior
           view.on('click', (event: any) => {
-            queryFeatureLayer(event.mapPoint, 50, "intersects");
+            queryFeatureLayer(event.mapPoint, 50, "esriSpatialRelIntersects");
             // view.hitTest(event)
             //   .then((hitTestResults: any) => {
             //     console.log(hitTestResults.results);
