@@ -58,8 +58,11 @@ const WebMapView = () => {
     () => {
       // lazy load the required ArcGIS API for JavaScript modules and CSS
       loadModules(['esri/Map', 'esri/views/MapView', 'esri/layers/FeatureLayer',
-        'esri/Graphic', 'esri/layers/GraphicsLayer', 'esri/widgets/Legend'], { css: true })
-        .then(([ArcGISMap, MapView, FeatureLayer, Graphic, GraphicsLayer, Legend]) => {
+        'esri/Graphic', 'esri/layers/GraphicsLayer', 'esri/widgets/Legend', 'esri/widgets/Expand'], { css: true })
+        .then(([ArcGISMap, MapView, FeatureLayer, Graphic, GraphicsLayer, Legend, Expand]) => {
+          let highlightCities: Array<any> = [], cityLayerView: any, roadLayerView: any;
+
+
           //satellite, streets-relief-vector, light-gray-vector, dark-gray-vector, streets-navigation-vector
           const map = new ArcGISMap({
             basemap: 'streets-navigation-vector'
@@ -76,7 +79,7 @@ const WebMapView = () => {
               content: "{pop2000}",
             }
           });
-          map.add(cityLayer);
+          map.add(cityLayer, 0);
 
           let roadLayer = new FeatureLayer({
             url: 'http://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/1',
@@ -90,7 +93,7 @@ const WebMapView = () => {
               }
             },
           });
-          map.add(roadLayer);
+          map.add(roadLayer, 0);
 
           let graphicsLayer = new GraphicsLayer();
           map.add(graphicsLayer);
@@ -117,13 +120,22 @@ const WebMapView = () => {
               units: 'kilometers',
               distance: distance,
               spatialRelationship: spatialRelationship,
-              outFields: ['areaname', 'pop2000', 'class'],
+              outFields: ['objectid', 'areaname', 'pop2000', 'class'],
               returnGeometry: true,
               // outStatistics: [],
               where: "class='city'",
             };
             cityLayer.queryFeatures(query).then(function (result: any) {
-              addGraphics(result);
+              // addGraphics(result);
+              //highlight
+              highlightCities.forEach(highlightCity => {
+                if (highlightCity) {
+                  highlightCity.remove();
+                }
+              });
+              result.features.forEach((feature: any) => {
+                highlightCities.push(cityLayerView.highlight(feature.attributes['objectid']))
+              })
             });
           }
 
@@ -132,45 +144,55 @@ const WebMapView = () => {
             container: mapRef.current,
             map: map,
             center: [-118, 34],
-            zoom: 8,
+            zoom: 6,
             highlightOptions: {
-              color: [255, 241, 58],
+              color: [255, 255, 0],
               fillOpacity: 0.4
             },
           });
-          let legend = new Legend({
+          let legendExpand = new Expand({
             view: view,
-            layerInfos: [{
-              layer: cityLayer,
-              title: 'Legend',
-            }]
+            content: new Legend({
+              view: view,
+              layerInfos: [{
+                layer: cityLayer,
+                title: 'Legend',
+              }]
+            })
           });
-          view.ui.add(legend, 'top-right');
+          view.ui.add(legendExpand, 'top-left');
 
-          view.whenLayerView(roadLayer).then((layerView: any) => {
-            console.log(layerView);
+          view.whenLayerView(cityLayer).then((layerView: any) => {
+            cityLayerView = layerView;
             layerView.on("click", (value: any) => {
-              // availableFields will become available
-              // once the layer view finishes updating
               console.log(value);
             });
           });
+          view.whenLayerView(roadLayer).then((layerView: any) => {
+            roadLayerView = layerView;
+            layerView.on("click", (value: any) => {
+              // availableFields will become available
+              // once the layer view finishes updating
+              // queryFeatureLayer(event.mapPoint, 50, "esriSpatialRelIntersects");
+              console.log(value);
+            });
+          })
 
 
           view.popup.autoOpenEnabled = false;  // Disable the default popup behavior
           view.on('click', (event: any) => {
             queryFeatureLayer(event.mapPoint, 50, "esriSpatialRelIntersects");
-            view.hitTest(event)
-              .then((hitTestResults: any) => {
-                console.log(hitTestResults.results);
-                if (hitTestResults.results) {
-                  // view.popup.open({ // open a popup to show some of the results
-                  //   location: event.mapPoint,
-                  //   title: "Hit Test Results",
-                  //   content: hitTestResults.results.length + "Features Found"
-                  // });
-                }
-              })
+            // view.hitTest(event)
+            //   .then((hitTestResults: any) => {
+            //     console.log(hitTestResults.results);
+            //     if (hitTestResults.results) {
+            //       // view.popup.open({ // open a popup to show some of the results
+            //       //   location: event.mapPoint,
+            //       //   title: "Hit Test Results",
+            //       //   content: hitTestResults.results.length + "Features Found"
+            //       // });
+            //     }
+            //   })
           })
 
           return () => {
