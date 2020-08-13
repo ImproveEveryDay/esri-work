@@ -98,8 +98,9 @@ const WebMapView = () => {
           let graphicsLayer = new GraphicsLayer();
           map.add(graphicsLayer);
 
-          function addGraphics(results: any) {
+          function addRoadGraphics(results: any, point: any) {
             graphicsLayer.removeAll();
+            addPointMarker(point);
             results
               .forEach((result: { graphic: any }) => {
                 let g = new Graphic({
@@ -111,6 +112,22 @@ const WebMapView = () => {
                 });
                 graphicsLayer.add(g);
               });
+          }
+          function addPointMarker(geometry: any) {
+            graphicsLayer.removeAll();
+            let g = new Graphic({
+              geometry: geometry,
+              symbol: {
+                type: 'simple-marker',
+                style: 'cross',
+                size: 15,
+                outline: {
+                  color: [0, 0, 0],
+                  width: 4,
+                }
+              },
+            });
+            graphicsLayer.add(g);
           }
           function queryAndHightlightFeatureLayer(point: any, distance: any, spatialRelationship: any) {
             let query = {
@@ -164,28 +181,21 @@ const WebMapView = () => {
           view.whenLayerView(cityLayer).then((layerView: any) => {
             cityLayerView = layerView;
           });
-          view.whenLayerView(roadLayer).then((layerView: any) => {
-            roadLayerView = layerView;
-            layerView.on("click", (value: any) => {
-              // availableFields will become available
-              // once the layer view finishes updating
-              // queryAndHightlightFeatureLayer(event.mapPoint, 50, "esriSpatialRelIntersects");
-              console.log(value);
-            });
-          })
-
+          // view.whenLayerView(roadLayer).then((layerView: any) => {
+          //   roadLayerView = layerView;
+          //   layerView.on("click", (value: any) => {
+          //   });
+          // });
 
           view.popup.autoOpenEnabled = false;  // Disable the default popup behavior
           view.on('click', (event: any) => {
+            //add symbol graphic to show the click point
             view.hitTest(event)
               .then((hitTestResults: any) => {
-                let graphics = (hitTestResults.results || []).filter((result: any) => result.graphic.attributes.admn_class !== undefined);
-                if (graphics.length) {
-                  addGraphics(graphics);
+                let results = (hitTestResults.results || []).filter((result: any) => result.graphic.attributes.admn_class !== undefined);
+                if (results.length) {
+                  addRoadGraphics(results, event.mapPoint);
                   queryAndHightlightFeatureLayer(event.mapPoint, 50, "esriSpatialRelIntersects");
-                }
-                else {
-                  graphicsLayer.removeAll();
                 }
               })
           })
