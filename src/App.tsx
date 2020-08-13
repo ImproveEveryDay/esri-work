@@ -62,7 +62,6 @@ const WebMapView = () => {
         .then(([ArcGISMap, MapView, FeatureLayer, Graphic, GraphicsLayer, Legend, Expand]) => {
           let highlightCities: Array<any> = [], cityLayerView: any, roadLayerView: any;
 
-
           //satellite, streets-relief-vector, light-gray-vector, dark-gray-vector, streets-navigation-vector
           const map = new ArcGISMap({
             basemap: 'streets-navigation-vector'
@@ -92,28 +91,28 @@ const WebMapView = () => {
                 width: "2px"
               }
             },
+            outFields: ['*'],
           });
           map.add(roadLayer, 0);
 
           let graphicsLayer = new GraphicsLayer();
           map.add(graphicsLayer);
 
-          function addGraphics(result: any) {
+          function addGraphics(results: any) {
             graphicsLayer.removeAll();
-            result.features
-              .forEach((feature: any) => {
-                const population = feature.attributes['pop2000'];
+            results
+              .forEach((result: { graphic: any }) => {
                 let g = new Graphic({
-                  geometry: feature.geometry,
-                  attributes: feature.attributes,
-                  symbol: Object.assign(highlightSymbol, {
-                    size: getSymbolSize(population),
-                  }),
+                  geometry: result.graphic.geometry,
+                  attributes: result.graphic.attributes,
+                  // symbol: Object.assign(highlightSymbol, {
+                  //   size: getSymbolSize(population),
+                  // }),
                 });
                 graphicsLayer.add(g);
               });
           }
-          function queryFeatureLayer(point: any, distance: any, spatialRelationship: any) {
+          function queryAndHightlightFeatureLayer(point: any, distance: any, spatialRelationship: any) {
             let query = {
               geometry: point,
               geometryType: 'esriGeometryEnvelope',
@@ -164,16 +163,13 @@ const WebMapView = () => {
 
           view.whenLayerView(cityLayer).then((layerView: any) => {
             cityLayerView = layerView;
-            layerView.on("click", (value: any) => {
-              console.log(value);
-            });
           });
           view.whenLayerView(roadLayer).then((layerView: any) => {
             roadLayerView = layerView;
             layerView.on("click", (value: any) => {
               // availableFields will become available
               // once the layer view finishes updating
-              // queryFeatureLayer(event.mapPoint, 50, "esriSpatialRelIntersects");
+              // queryAndHightlightFeatureLayer(event.mapPoint, 50, "esriSpatialRelIntersects");
               console.log(value);
             });
           })
@@ -181,18 +177,17 @@ const WebMapView = () => {
 
           view.popup.autoOpenEnabled = false;  // Disable the default popup behavior
           view.on('click', (event: any) => {
-            queryFeatureLayer(event.mapPoint, 50, "esriSpatialRelIntersects");
-            // view.hitTest(event)
-            //   .then((hitTestResults: any) => {
-            //     console.log(hitTestResults.results);
-            //     if (hitTestResults.results) {
-            //       // view.popup.open({ // open a popup to show some of the results
-            //       //   location: event.mapPoint,
-            //       //   title: "Hit Test Results",
-            //       //   content: hitTestResults.results.length + "Features Found"
-            //       // });
-            //     }
-            //   })
+            view.hitTest(event)
+              .then((hitTestResults: any) => {
+                let graphics = (hitTestResults.results || []).filter((result: any) => result.graphic.attributes.admn_class !== undefined);
+                if (graphics.length) {
+                  addGraphics(graphics);
+                  queryAndHightlightFeatureLayer(event.mapPoint, 50, "esriSpatialRelIntersects");
+                }
+                else {
+                  graphicsLayer.removeAll();
+                }
+              })
           })
 
           return () => {
