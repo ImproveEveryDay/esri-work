@@ -1,8 +1,9 @@
 export const STOPS = [
-    { value: 10000, size: 4, label: "<10000" },
-    { value: 20000, size: 8, label: "<20000" },
-    { value: 30000, size: 12, label: "<30000" },
-    { value: 40000, size: 14, label: '>40000' },
+    { value: 10000, size: 4, label: "< 10000" },
+    { value: 20000, size: 8, label: "< 20000" },
+    { value: 30000, size: 12, label: "< 30000" },
+    { value: 40000, size: 14, label: '< 40000' },
+    { value: 50000, size: 16, label: '< 50000' },
 ];
 export const VisualVariables = [
     {
@@ -12,7 +13,11 @@ export const VisualVariables = [
             title: 'population for city',
         },
         field: "pop2000",
-        stops: STOPS,
+        // stops: STOPS,
+        maxDataValue: 100000,
+        maxSize: 20,
+        minDataValue: 10000,
+        minSize: 4,
     }
 ];
 export const CityLayerRenderer = {

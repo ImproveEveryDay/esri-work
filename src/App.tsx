@@ -75,7 +75,7 @@ const WebMapView = () => {
             container: mapRef.current,
             map: map,
             center: [-118, 34],
-            zoom: 6,
+            zoom: 8,
             highlightOptions: HighlightOptions,
             popup: {
               defaultPopupTemplateEnabled: false,
