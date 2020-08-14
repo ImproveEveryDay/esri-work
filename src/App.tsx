@@ -4,7 +4,7 @@ import { loadModules } from 'esri-loader';
 // import MapView from "esri/views/MapView";
 // import FeatureLayer from 'esri/layers/FeatureLayer';
 import './App.css';
-import { CityLayerRenderer } from './Config';
+import { CityLayerRenderer, ClickedPointSymbol, HighlightOptions } from './Config';
 
 const WebMapView = () => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -21,7 +21,6 @@ const WebMapView = () => {
         'esri/widgets/Legend',
         'esri/widgets/Expand',
         "esri/PopupTemplate",
-        "esri/popup/content/CustomContent",
       ], { css: true })
         .then(([
           ArcGISMap,
@@ -32,7 +31,6 @@ const WebMapView = () => {
           Legend,
           Expand,
           PopupTemplate,
-          CustomContent,
         ]) => {
           let highlightCitySelect: any,
             highlightRoadSelect: any,
@@ -78,10 +76,7 @@ const WebMapView = () => {
             map: map,
             center: [-118, 34],
             zoom: 6,
-            highlightOptions: {
-              color: [255, 255, 0],
-              fillOpacity: 0.4
-            },
+            highlightOptions: HighlightOptions,
             popup: {
               defaultPopupTemplateEnabled: false,
               dockEnabled: true,
@@ -118,9 +113,9 @@ const WebMapView = () => {
                 let roadResults = (hitTestResults.results || []).filter((result: any) => result.graphic.layer === roadLayer);
                 if (roadResults.length) {//click road layer
                   let roadGraphic = roadResults[0].graphic;
+                  highlightRoadSelect = roadLayerView.highlight(roadGraphic);
                   addPointMarker(event.mapPoint);
                   queryAndHightlightCities(event.mapPoint, 50, "esriSpatialRelIntersects");
-                  highlightRoadSelect = roadLayerView.highlight(roadGraphic);
                 }
                 else {//click city layer
                   let cityResults = (hitTestResults.results || []).filter((result: any) => result.graphic.layer === cityLayer);
@@ -134,15 +129,7 @@ const WebMapView = () => {
             function addPointMarker(geometry: any) {
               let g = new Graphic({
                 geometry: geometry,
-                symbol: {
-                  type: 'simple-marker',
-                  style: 'cross',
-                  size: 15,
-                  outline: {
-                    color: [0, 0, 0],
-                    width: 4,
-                  }
-                },
+                symbol: ClickedPointSymbol,
               });
               graphicsLayer.add(g);
             }
